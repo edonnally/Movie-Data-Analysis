@@ -1,4 +1,4 @@
-# Movie-Dataset-Analysis
+# Movie-Data-Analysis
 Master's program assignment 
 * Source data is pulled from https://www.kaggle.com/rounakbanik/the-movies-dataset
 
@@ -16,6 +16,8 @@ a film being great, while a film’s budget has a negative, but negligible impac
 In this report, we will define a “great movie” as one that has a 7.5 or higher vote average within the dataset.
 This threshold is above the center of the distribution shown below, and we believe it is a reasonably high
 value to benchmark the critical success of a film.
+
+![alt text](https://github.com/edonnally/Movie-Data-Analysis/blob/main/Average%20Movie%20Vote%20Score.PNG)
 
 # EDA
 In order to build the best model possible, we needed to refine the data we used before trying to get some
@@ -44,6 +46,10 @@ is a dummy variable used to see if the movie was produced outside of the United 
 graph that depicts the counts of each type of genre found in the data we used along with a table showing
 statistics about our numeric variables:
 
+![alt text](https://github.com/edonnally/Movie-Data-Analysis/blob/main/Count%20of%20Movies%20by%20Genre.PNG)
+
+![alt text](https://github.com/edonnally/Movie-Data-Analysis/blob/main/Table1.PNG)
+
 # Regression
 The final model we came up with included familyplus, serious, actionpacked, runtime, budget and foreign.
 The respective coefficients can be found in the table shown below. Nearly all these variables produced
@@ -52,6 +58,8 @@ coefficients are not directly interpretable to predict ratings, their sign (posi
 the relationship each variable has with ratings. Familyplus, actionpacked, budget, and foreign all have a
 negative relationship. Serious and runtime are the only two positive variables.
 
+![alt text](https://github.com/edonnally/Movie-Data-Analysis/blob/main/Coefficient%20Table.PNG)
+
 # Marginal Effects
 This shows that making a serious movie with a relatively longer runtime ought to increase the probability
 of making a well-rated film. The other variables in the model, however, will tend to decrease the chances of
@@ -59,6 +67,9 @@ making a well-rated movie if they are realized; The marginal effect on the proba
 movie if it is foreign (not produced by an American company) is –20.72% and the marginal effect of adding
 an additional 1 million dollars to the budget of a movie from 5 million to 6 million is -.0061%. These effects
 are shown below:
+
+![alt text](https://github.com/edonnally/Movie-Data-Analysis/blob/main/MarginalEffects.PNG)
+
 
 # Limitations
 
@@ -99,4 +110,4 @@ Those factors, in essence, reflect an important factor to evaluating works of ar
 hard task, and even though we think this model works well, it does not encapsulate what makes a movie
 great: unique ideas, chemistry between actors, and an overall vision. Any future director or production
 company must take these factors into account when creating their next magnum opus.
-4
+
