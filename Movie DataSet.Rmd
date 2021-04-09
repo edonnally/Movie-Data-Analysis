@@ -1,0 +1,415 @@
+---
+title: "Movies Dream Job"
+author: ""
+date: "3/1/2021"
+output:
+  pdf_document: default
+  html_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include = FALSE} 
+## Import Libraries
+library(readr)
+library(tidyverse)
+library(ggplot2)
+library(stringr)
+library(dplyr)
+library(broom)
+library(expss)
+library(kableExtra)
+library(gdtools)
+library(knitr)
+```
+
+
+
+```{r, include = FALSE}
+## Import Datasets
+ratings <- read_csv("C:/Users/forre/Documents/SMU/MAST 6251 Applied Predictive Analytics/archive/ratings.csv")
+movies3 <- read_csv("C:/Users/forre/Documents/SMU/MAST 6251 Applied Predictive Analytics/archive/movies3.csv")
+movies_plus_cast <- read_csv("C:/Users/forre/Documents/SMU/MAST 6251 Applied Predictive Analytics/archive/moviespluscast.csv")
+moviesmetadata <- read_csv("C:/Users/forre/Documents/SMU/MAST 6251 Applied Predictive Analytics/archive/movies_metadata.csv")
+```
+
+
+```{r, include = FALSE}
+###Descriptive Graph: Bar Graph of Genre Count
+movies3fix <- movies3[!(movies3$genre=="error"),] ### removed 9 rows that had error as the genre
+
+CGenre<-ggplot(movies3fix, aes(genre, fill = genre))      +
+    geom_bar(show.legend = FALSE)             +
+      labs(x = 'Genres', y = 'Movies count') +
+    ggtitle('Count of Movies by Genre')+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  theme(plot.title = element_text(hjust = 0.5))
+
+```
+
+
+```{r, include = FALSE}
+###Descriptive Graph: Data Table showing Mean, Median, SD, Min, Max of numerics
+
+movies3num <- subset(movies3, select= c(budget, popularity, revenue, runtime, vote_average, vote_count))
+
+movies3num %>%
+  tab_cells(budget, popularity, revenue, runtime, vote_average, vote_count) %>%
+  tab_stat_fun(Mean=w_mean, "Median"=w_median, "Std. dev." = w_sd,"Min"=w_min, 
+               "Max"=w_max,
+               method = list) %>%
+tab_pivot %>%
+  if_na(0)%>%
+  set_caption("Summary Statistics of Numeric Values")
+na_count <- colSums(is.na(movies3num))
+
+a = 'Missing values per variable'
+write(a, stdout())
+print(na_count)
+```
+
+
+```{r, include = FALSE}
+# EDA
+## Find Vote Average
+movies_plus_cast %>%
+  filter(vote_count > 100) %>%
+  summarize(
+    mean_rating = mean(vote_average),
+    median_rating = median(vote_average),
+    sd_rating = sd(vote_average)
+  )
+
+```
+```{r, include = FALSE}
+## Create Great Variable
+movies_plus_cast$great <- ifelse(movies_plus_cast$vote_average >= 7.5, 1, 0) ## other dataset great movies 
+```
+
+```{r, include = FALSE}
+## Create genre variables
+
+### Separate genres into distinct columns
+moviesgenre <- movies3
+moviesgenre$foreign <- ifelse(moviesgenre$genre == 'Foreign', 1, 0)
+moviesgenre$TVmovie <- ifelse(moviesgenre$genre == 'Tv Movie', 1, 0)
+moviesgenre$romance <- ifelse(moviesgenre$genre == 'Romance', 1, 0)
+moviesgenre$comedy <- ifelse(moviesgenre$genre == 'Comedy', 1, 0)
+moviesgenre$animation <- ifelse(moviesgenre$genre == 'Animation', 1, 0)
+moviesgenre$war <- ifelse(moviesgenre$genre == 'War', 1, 0)
+moviesgenre$action <- ifelse(moviesgenre$genre == 'Action', 1, 0)
+moviesgenre$adventure <- ifelse(moviesgenre$genre == 'Adventure', 1, 0)
+moviesgenre$crime <- ifelse(moviesgenre$genre == 'Crime', 1, 0)
+moviesgenre$family <- ifelse(moviesgenre$genre == 'Family', 1, 0)
+moviesgenre$documentary <- ifelse(moviesgenre$genre == 'Documentary', 1, 0)
+moviesgenre$fantasy <- ifelse(moviesgenre$genre == 'Fantasy', 1, 0)
+moviesgenre$history <- ifelse(moviesgenre$genre == 'History', 1, 0)
+moviesgenre$horror <- ifelse(moviesgenre$genre == 'Horror', 1, 0)
+moviesgenre$music <- ifelse(moviesgenre$genre == 'Music', 1, 0)
+moviesgenre$mystery <- ifelse(moviesgenre$genre == 'Mystery', 1, 0)
+moviesgenre$scifi <- ifelse(moviesgenre$genre == 'Science Fiction', 1, 0)
+moviesgenre$thriller <- ifelse(moviesgenre$genre == 'Thriller', 1, 0)
+
+### Collapse the columns so that one movie is one observation in dataset
+cleanmoviegenre <- moviesgenre %>%
+  group_by(title) %>%
+  mutate(comedy1 = sum(comedy),
+         foreign1 = sum(foreign),
+         TVmovie1 = sum(TVmovie),
+         romance1 = sum(romance),
+         animation1 = sum(animation),
+         war1 = sum(war),
+         action1 = sum(action),
+         adventure1 = sum(adventure),
+         crime1 = sum(crime),
+         family1 = sum(family),
+         history1 = sum(history),
+         fantasy1 = sum(fantasy),
+         documentary1 = sum(documentary),
+         horror1 = sum(horror),
+         music1 = sum(music),
+         mystery1 = sum(mystery),
+         scifi1 = sum(scifi),
+         thriller1 = sum(thriller)) %>%
+    select(id.x, title, comedy1, foreign1, TVmovie1, romance1, animation1, war1, action1, adventure1, crime1, family1, history1, fantasy1, documentary1, horror1, music1, mystery1, scifi1, thriller1) %>%
+  distinct()
+
+cleanmoviegenre$comedy1 <- ifelse(cleanmoviegenre$comedy1 >= 1, 1, 0)
+cleanmoviegenre$foreign1 <- ifelse(cleanmoviegenre$foreign1 >= 1, 1, 0)
+cleanmoviegenre$TVmovie1 <- ifelse(cleanmoviegenre$TVmovie1 >= 1, 1, 0)
+cleanmoviegenre$romance1 <- ifelse(cleanmoviegenre$romance1 >= 1, 1, 0)
+cleanmoviegenre$animation1 <- ifelse(cleanmoviegenre$animation1 >= 1, 1, 0)
+cleanmoviegenre$war1 <- ifelse(cleanmoviegenre$war1 >= 1, 1, 0)
+cleanmoviegenre$action1 <- ifelse(cleanmoviegenre$action1 >= 1, 1, 0)
+cleanmoviegenre$adventure1 <- ifelse(cleanmoviegenre$adventure1 >= 1, 1, 0)
+cleanmoviegenre$crime1 <- ifelse(cleanmoviegenre$crime1 >= 1, 1, 0) 
+cleanmoviegenre$family1 <- ifelse(cleanmoviegenre$family1 >= 1, 1, 0)
+cleanmoviegenre$history1 <- ifelse(cleanmoviegenre$history1 >= 1, 1, 0)
+cleanmoviegenre$fantasy1 <- ifelse(cleanmoviegenre$fantasy1 >= 1, 1, 0)
+cleanmoviegenre$documentary1 <- ifelse(cleanmoviegenre$documentary1 >= 1, 1, 0)
+cleanmoviegenre$horror1 <- ifelse(cleanmoviegenre$horror1 >= 1, 1, 0)
+cleanmoviegenre$music1 <- ifelse(cleanmoviegenre$music1 >= 1, 1, 0)
+cleanmoviegenre$mystery1 <- ifelse(cleanmoviegenre$mystery1 >= 1, 1, 0)
+cleanmoviegenre$scifi1 <- ifelse(cleanmoviegenre$scifi1 >= 1, 1, 0)
+cleanmoviegenre$thriller1 <- ifelse(cleanmoviegenre$thriller1 >= 1, 1, 0)
+```
+
+```{r, include = FALSE}
+## Put the dataset together
+cleanmoviegenre$movie_id <- as.numeric(cleanmoviegenre$id.x)
+
+cleanmovie <- movies_plus_cast %>%
+  select(movie_id, budget, revenue, great, vote_count, vote_average) %>%
+  distinct() %>%
+  inner_join(cleanmoviegenre, by = "movie_id") %>%
+  inner_join(moviesmetadata %>% select(runtime, id), by = c("movie_id" = "id")) %>%
+  mutate(budgetmillion = budget / 1000000) %>%
+  filter(revenue > 0 | budget > 0 | runtime > 0) %>%
+  filter(vote_count > 25) %>%
+  filter(runtime < 360)
+```
+
+```{r, include = FALSE}
+
+movies3df <- data.frame(
+  Measure = c("Budget", "Revenue", "Runtime", "Vote Average", "Vote Count"), 
+  Mean = c(mean(cleanmovie$budget, na.rm = TRUE), mean(cleanmovie$revenue, na.rm = TRUE), mean(cleanmovie$runtime, na.rm = TRUE), mean(cleanmovie$vote_average, na.rm = TRUE), mean(cleanmovie$vote_count, na.rm = TRUE)),
+  Standard_Deviation = c(sd(cleanmovie$budget, na.rm = TRUE), sd(cleanmovie$revenue, na.rm = TRUE), sd(cleanmovie$vote_average, na.rm = TRUE), sd(cleanmovie$vote_average, na.rm = TRUE), sd(cleanmovie$vote_count, na.rm = TRUE))
+)
+
+NVBS<-movies3df %>%
+  kable(
+    caption = "Summary Statistics of Numeric Variables",
+    digits = c(0, 2, 2)
+  ) %>%
+  kable_paper(lightable_options = "striped", full_width = F, latex_options = "hold_position")
+  
+```
+
+```{r, include = FALSE}
+head(cleanmovie)
+dim(cleanmovie)
+```
+```{r, include = FALSE}
+## Combine some dummy variables for better modeling 
+
+cleanmovie <- cleanmovie %>%
+  mutate(
+    familyplus = ifelse(animation1 == 1 | family1 == 1 | comedy1 == 1, 1, 0),
+    romcom = ifelse(romance1 == 1 & comedy1 == 1, 1, 0),
+    serious = ifelse(war1 == 1 | documentary1 == 1 | history1 == 1, 1, 0), 
+    misc = ifelse(music1 == 1 | TVmovie1 == 1, 1, 0),
+    actionpacked = ifelse(action1 == 1 | adventure1 == 1 | crime1 == 1 | thriller1 == 1, 1, 0) 
+  )
+```
+
+```{r, include = FALSE}
+AvgVote<-ggplot(cleanmovie, aes(x=vote_average))+
+  geom_histogram()+
+  labs (x= 'Average vote score', y= 'Count of movies')+
+ggtitle('Average Movie Vote Score')+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+```{r, include = FALSE}
+model <- glm(great ~ familyplus + serious + actionpacked + runtime + budgetmillion + foreign1, data = cleanmovie, family = "binomial")
+```
+```{r, include = FALSE}
+summary(model)
+```
+```{r, include = FALSE}
+familyplus <- 0
+serious <- 0
+actionpacked <- 1
+runtime <- 2
+budgetmillion <- 2.5
+foreign1 <- 0
+
+df1 <- data.frame(familyplus, serious, actionpacked, runtime, budgetmillion, foreign1)
+
+
+predict(model, df1, type = "response")
+```
+
+```{r, echo = FALSE}
+Coeff<-model %>%
+  tidy() %>%
+  mutate(
+    term = c("Intercept", "Movie: Family or Comedy or Animation", "Movie: Documentary or War or History", "Movie: Action or Thriller", "Runtime", "Budget (per million)", "Movie: Foreign Film")) %>%
+kable(
+    caption = "Coefficient Level Estimates for a Logistic Regression Model Predicting a Great Movie",
+    col.names = c("Predictor", "Beta", "Standard Error", "T-statistic", "P-Value"),
+    digits = c(0, 3, 3, 3, 3)
+  ) %>%
+    kable_paper(lightable_options = "striped", full_width = F, latex_options = "hold_position")
+
+```
+
+```{r, include = FALSE}
+### use predict to create various probabilities
+
+familyplus <- c(0,0,0, 0)
+serious <- c(0,0, 0, 0)
+actionpacked <- c(1, 1, 0, 0)
+runtime <- c(120, 120, 120, 120)
+budgetmillion <- c(5, 6, 5, 5)
+foreign1 <- c(0,0, 0, 1)
+
+df1 <- data.frame(familyplus, serious, actionpacked, runtime, budgetmillion, foreign1)
+
+
+predict1 <- predict(model, df1, type = "response")
+```
+
+```{r, include = FALSE}
+
+### create budget and foreign marginal effect calculations 
+predict2 <- as.data.frame(predict1)
+
+head(predict2)
+
+budget5 <- predict2[1,1] ## prob for 5 million dollar 2 hour action film
+budget6 <- predict2[2,1] ## same prob but for 6
+foreign0 <- predict2[3, 1] ## prob for 5 million dollar 2 hour non foreign film
+foreign1 <- predict2[4, 1] ## same but for foreign film
+
+round(((budget6 - budget5) / budget5) * 100, 3)
+round(((foreign1 - foreign0)/foreign0 * 100), 3)
+```
+```{r, include = FALSE}
+###looking at total number of "great" movies
+
+movies_plus_cast %>% count(great)
+
+cleanmovie %>% count(great)
+```
+
+```{r, include = FALSE}
+column_names <- c("5 million movie", "6 million movie", "Non-foreign film", "Foreign film")
+
+probtable <- column_names %>%
+  cbind(predict2) %>%
+  kable(
+    caption = "Probabilities of Several Movie Examples",
+    col.names = c("Movie Example", "Probability of Success"),
+    digits = c(0,3)
+  ) %>%
+  kable_paper(lightable_options = "striped", full_width = F, latex_options = "hold_position")
+
+```
+
+```{r, include = FALSE}
+sum(cleanmoviegenre$comedy1)
+sum(cleanmoviegenre$foreign1)
+sum(cleanmoviegenre$TVmovie1)
+sum(cleanmoviegenre$romance1)
+sum(cleanmoviegenre$animation1)
+sum(cleanmoviegenre$war1)
+sum(cleanmoviegenre$action1)
+sum(cleanmoviegenre$adventure1)
+sum(cleanmoviegenre$crime1)
+sum(cleanmoviegenre$family1)
+sum(cleanmoviegenre$history1)
+sum(cleanmoviegenre$fantasy1)
+sum(cleanmoviegenre$documentary1)
+sum(cleanmoviegenre$horror1)
+sum(cleanmoviegenre$music1)
+sum(cleanmoviegenre$mystery1)
+sum(cleanmoviegenre$scifi1)
+sum(cleanmoviegenre$thriller1)
+```
+
+```{r, include = FALSE}
+cleanmoviedf = data.frame(Genre= c("Comedy","Foreign","TVMovie","Romance","Animation","War","Action","Adventure",
+                                   "Crime","Family","History","Fantasy","Documentary","Horror","Music","Mystery",
+                                   "SciFi","Thriller"),
+                          Count_Films = c(1397,1920,0,7478,2123,1497,7247,3839,4923,2995,1578,2603,4208,5236,1755,2874,3371,8548))
+```
+```{r, include = FALSE}
+CleanGenre <- ggplot(data=cleanmoviedf, aes(x=Genre, y=Count_Films, fill=Genre)) +
+  geom_bar(stat="identity", show.legend = FALSE)+
+labs(x = 'Genres', y = 'Movies count') +
+    ggtitle('Count of Movies by Genre')+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+By: Alex O'Donnell, Eric Donnally, Shay Niemeyer, Ross Duvall
+
+IDs: 48202288, 37282925, 36806631, 47045938
+
+# Introduction
+
+The purpose of this report is to predict the likelihood of producing a great movie using variables like a movie’s genre, its runtime, and its budget. To create this model, we imported data from the Movies Dataset from Kaggle and created a logistic regression to predict success. Using this model, we show that certain genres (like foreign films and family-related genres) and the runtime have a statistically significant effect on a film being great, while a film’s budget has a negative, but negligible impact on greatness.  
+
+In this report, we will define a “great movie” as one that has a 7.5 or higher vote average within the dataset.  This threshold is above the center of the distribution shown below, and we believe it is a reasonably high value to benchmark the critical success of a film. 
+
+```{r, echo = FALSE, message = FALSE, warning = FALSE, fig.height=3}
+AvgVote
+```
+
+# EDA
+
+In order to build the best model possible, we needed to refine the data we used before trying to get some insights. We only included movies that exceeded 100 votes, revenues greater than 0, budgets greater than 0, and runtimes that are greater than 0 but less than 360 minutes. This cleaning was done to ensure that the movies we analyzed were properly vetted by consumers, and that our data would not be skewed by outliers. These filters refined our dataset from over 45,000 observations to just above 13,000 observations. 
+
+ 
+
+Another part of the cleaning process was creating specific genre categories for our analysis. This was done because there were 17 separate genres, and often they overlapped in terms of content (family and animation, for example). So for this project, we created the following aggregated genre values: 
+
+* “familyplus” - either a comedy or animation or family film 
+
+* “actionpacked” - either an action or crime or thriller film 
+
+* “serious” - either a war film or documentary or history film 
+
+* “misc” - either a music film or TV movie 
+
+Additionally, we created a variable called budgetmillion, which as the name suggests, is the budget variable divided by one million.  
+
+The runtime variable measures the length of each movie in minutes. The budget variable is the total budget of the movie in dollars. We broke up genres into several different variables using dummy variables (binary 1s or 0s). Rather than deal with the multitude of genres found in the data, we created new variables combining genres that you might commonly see together; Familyplus is a combination of animation or family or comedy. Serious is a combination of war or documentary or history. Misc is a combination of music or TVmovie. Finally, actionpacked is a combination of action or adventure or crime or thriller. The final variable, foreign, is a dummy variable used to see if the movie was produced outside of the United States. Shown below is a graph that depicts the counts of each type of genre found in the data we used along with a table showing statistics about our numeric variables: 
+
+```{r, echo = FALSE, message = FALSE}
+par(mfrow = c(2,1))
+CleanGenre
+NVBS
+```
+
+
+# Regression
+The final model we came up with included familyplus, serious, actionpacked, runtime, budget and foreign. The respective coefficients can be found in the table shown below. Nearly all these variables produced statistically significant coeffecients; only foreign had a p-value that was slighly above .05.  While these coefficients are not directly interpretable to predict ratings, their sign (positive or negative) does indicate the relationship each variable has with ratings. Familyplus, actionpacked, budget, and foreign all have a negative relationship. Serious and runtime are the only two positive variables.
+
+```{r, echo = FALSE}
+Coeff
+```
+
+## Marginal Effects
+
+This shows that making a serious movie with a relatively longer runtime ought to increase the probability of making a well-rated film. The other variables in the model, however, will tend to decrease the chances of making a well-rated movie if they are realized; The marginal effect on the probability of making a successful movie if it is foreign (not produced by an American company) is –20.72% and the marginal effect of adding an additional 1 million dollars to the budget of a movie from 5 million to 6 million is -.0061%. These effects are shown below: 
+
+```{r, echo = FALSE}
+probtable
+```
+
+# Limitations
+
+While this model does offer some useful insights, we realize that it has certain limitations. For example, it does seem odd that a variable like budget is negative, but it is our theory that budget is likely small and negative due to an abundance of well-reviewed smaller movies that have only a few ratings compared to larger-budget films that have a lower rating due to a larger aggregation of reviews. The model seems to suggest that decreasing the budget will lead to a higher rating, but we would argue that this negative relationship merely indicates that high ratings cannot be achieved by throwing money at the production of the movie.  
+
+We may also have an endogeneity issue with our model because we are basing the success of a movie on the average vote rather than other measures that are available to us (like revenue, profit, or other metrics). We decided against including variables like actors, directors, revenue, production companies due to these variables being too cumbersome for a logistic model and their likelihood to create even more endogeneity issues (popular actors and directors could create a feedback loop of good ratings). That being said, there are likely still insights we could gain from using more variables like these and their absence in our model could be confounding.  
+
+In a perfect world, we would obtain experimental data on these variables by creating nearly identical cuts of movies and showing them to control groups, measuring the difference in ratings between cuts that have a slightly different runtime, budget, tone, and other features. This would allow us to have a true baseline for our analysis, as we would not have to depend on observational data and the presence of confounding variables. 
+
+# Recommendations 
+
+Despite the limitations of our model, the significance of our findings ought not be overlooked. As previously stated, budget does not have a positive relationship with high ratings according to our model; we interpret this to mean that it is in the interest of our future movie-maker to spend only what is absolutely necessary to realize their artistic vision. Expensive CGI or effects, if not necessary, will likely not add value to a movie in itself. Additionally, going overboard on marketing expenses will likely not result in a higher rated movie.
+
+Also, making a “Serious” movie, according to our model, is the best route to go in order to achieve the best ratings. Choosing a historical setting or one having to do with war increases the probability that a movie will be well-reviewed, so it is in the best interest of our future movie-maker to seek out stories that have these elements. Likewise, a family movie performs slightly below other film types. That does not mean that a director set on creating a children’s film should not make one; rather, it is something that he or she should keep in mind and not be disappointed if it does not rate well.  
+
+As we have mentioned before, we excluded actors and directors from the analysis due to endogeneity issues. Those factors, in essence, reflect an important factor to evaluating works of art. Quantifying greatness is a hard task, and even though we think this model works well, it does not encapsulate what makes a movie great: unique ideas, chemistry between actors, and an overall vision. Any future director or production company must take these factors into account when creating their next magnum opus.  
+
+
+
+
