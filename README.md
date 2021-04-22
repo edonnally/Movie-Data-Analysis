@@ -3,7 +3,7 @@ Master's program assignment
 * Source data is pulled from https://www.kaggle.com/rounakbanik/the-movies-dataset
 
 # Project Description:
-* Created a logistic regression model to predict the likelihood of producing a great movie using variables such as movie runtime, genre, budget, etc. and determine which variables are most important in producting a great movie.
+* Created a logistic regression model in R to predict the likelihood of producing a great movie using variables such as movie runtime, genre, budget, etc. and determine which variables are most important in producting a great movie.
 * Prepped data on 45k movies from the Full Movie Lens Dataset.
 * Used dummy variables to break up genres into separate variables. 
 
