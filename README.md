@@ -1,5 +1,5 @@
 # Movie-Data-Analysis
-Master's program assignment 
+Master's program group assignment 
 * Source data is pulled from https://www.kaggle.com/rounakbanik/the-movies-dataset
 
 # Project Description:
